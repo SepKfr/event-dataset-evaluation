@@ -1,6 +1,5 @@
 import random
 import numpy as np
-import pysdtw
 import torch
 import torch.nn as nn
 from modules.transformer import Transformer
