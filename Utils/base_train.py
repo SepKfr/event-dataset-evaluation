@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # Link to repository: https://github.com/google-research/google-research/tree/master/tft
-
+import pandas as pd
 # Lint as: python3
 
 import torch
@@ -153,16 +153,17 @@ def batch_sampled_data(data, train_percent, max_samples, time_steps,
 
     def convert_continuous(y_true):
         """
-        Convert continuous target values to normalized form.
+        Convert categorical target values to continuous form.
 
-        :param y_true: Target values to be normalized.
-        :return: Normalized target values.
+        :param y_true: Target values to be converted.
+        :return: continuous target values.
         """
-        y_true = y_true.to(torch.float)
-        mean = torch.mean(y_true, dim=0)
-        std_deviation = torch.std(y_true, dim=0)
-        y_true = (y_true - mean) / std_deviation
-        return y_true
+        y_true_2d = y_true.reshape(-1, 2)
+        y_true_cont = pd.DataFrame(y_true_2d).ewm(alpha=0.2).mean()
+        y_true_cont = y_true_cont.to_numpy()
+        y_true_cont = torch.FloatTensor(y_true_cont)
+        y_true_cont = y_true_cont.reshape(y_true.shape)
+        return y_true_cont
 
     # Create datasets for training, validation, and testing
     train_data = TensorDataset(torch.FloatTensor(sample_train['enc_inputs']),
