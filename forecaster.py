@@ -34,9 +34,8 @@ class Forecaster(nn.Module):
                                       n_heads=config.n_heads)
 
         self.proj_down_dec = nn.Linear(config.d_model*config.src_input_size, 2)
-        self.proj_down_dec_res = nn.Linear(config.d_model*config.src_input_size, 2)
 
-    def forward(self, enc_inputs, dec_inputs, forecaster_model, y_true):
+    def forward(self, enc_inputs, dec_inputs):
         """
         Forward pass of the forecaster.
 
@@ -47,11 +46,8 @@ class Forecaster(nn.Module):
         :return: Loss value.
         """
         if self.residual:
-            enc_outputs, dec_outputs = forecaster_model.forecaster(enc_inputs, dec_inputs)
             enc_outputs_res, dec_outputs_res = self.forecaster(enc_inputs, dec_inputs)
-
-            dec_outputs = self.proj_down_dec(dec_outputs)
-            outputs = self.proj_down_dec_res(dec_outputs_res)
+            outputs = self.proj_down_dec(dec_outputs_res)
 
         else:
             enc_outputs, dec_outputs = self.forecaster(enc_inputs, dec_inputs)

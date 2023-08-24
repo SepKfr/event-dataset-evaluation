@@ -246,12 +246,9 @@ class Train:
         optimizer = NoamOpt(Adam(model.parameters(), lr=0, betas=(0.9, 0.98), eps=1e-9), 2, d_model, w_steps)
 
         # Train forecasting models
-        def train_forecaster(predictor, predictor_1):
+        def train_forecaster(predictor, optim, residual=False):
 
             val_loss_l1 = 1e10
-
-            forecasting_optimizer = NoamOpt(Adam(predictor.parameters(), lr=0, betas=(0.9, 0.98), eps=1e-9),
-                                            2, d_model, w_steps)
 
             for e in range(self.num_epochs):
 
@@ -260,18 +257,18 @@ class Train:
                 tot_loss = 0
 
                 for trn_enc, trn_dec, trn_y, trn_y_forecasting in self.train:
-                    train_y_true = trn_y_forecasting.to(self.device, dtype=torch.float)
-                    outputs_forecaster = predictor(trn_enc.to(self.device), trn_dec.to(self.device), predictor_1, train_y_true)
+                    train_y_true = trn_y_forecasting.to(self.device)
+                    outputs_forecaster = predictor(trn_enc.to(self.device), trn_dec.to(self.device))
 
-                    if predictor_1 is not None:
+                    if residual:
                         train_y_true = train_y_true - outputs_forecaster
 
                     l1_loss = nn.L1Loss()(train_y_true, outputs_forecaster)
-                    tot_loss += l1_loss
+                    tot_loss += l1_loss.item()
 
-                    forecasting_optimizer.zero_grad()
+                    optim.zero_grad()
                     l1_loss.backward()
-                    forecasting_optimizer.step_and_update_lr()
+                    optim.step_and_update_lr()
 
                 if e % 5 == 0:
                     print("Train epoch: {}, loss: {:.4f}".format(e, tot_loss))
@@ -280,20 +277,20 @@ class Train:
                 test_loss = 0
 
                 for vad_enc, vad_dec, vad_y, vad_y_forecasting in self.valid:
-                    valid_y_true = vad_y_forecasting.to(self.device, dtype=torch.float)
-                    outputs_forecaster = predictor(vad_enc.to(self.device), vad_dec.to(self.device), predictor_1, valid_y_true)
-                    if predictor_1 is not None:
+                    valid_y_true = vad_y_forecasting.to(self.device)
+                    outputs_forecaster = predictor(vad_enc.to(self.device), vad_dec.to(self.device))
+                    if residual:
                         valid_y_true = valid_y_true - outputs_forecaster
 
                     l1_loss = nn.L1Loss()(valid_y_true, outputs_forecaster)
-                    test_loss += l1_loss
+                    test_loss += l1_loss.item()
 
                 if e % 5 == 0:
                     print("Train epoch: {}, val loss: {:.4f}".format(e, test_loss))
 
                 if test_loss < val_loss_l1:
                     val_loss_l1 = test_loss
-                    if predictor_1 is None:
+                    if not residual:
                         self.best_forecasting_model = predictor
                     else:
                         self.best_res_model = predictor
@@ -303,8 +300,12 @@ class Train:
         # Train forecasting models if residuals are added
         if self.add_residual:
 
-            train_forecaster(forecasting_model, None)
-            train_forecaster(residual_model, self.best_forecasting_model)
+            forecasting_optimizer = NoamOpt(Adam(forecasting_model.parameters(), lr=0, betas=(0.9, 0.98), eps=1e-9),
+                                            2, d_model, w_steps)
+            train_forecaster(forecasting_model, forecasting_optimizer)
+            forecasting_optimizer = NoamOpt(Adam(residual_model.parameters(), lr=0, betas=(0.9, 0.98), eps=1e-9),
+                                            2, d_model, w_steps)
+            train_forecaster(residual_model, forecasting_optimizer, residual=True)
 
         val_score = -np.inf
 
