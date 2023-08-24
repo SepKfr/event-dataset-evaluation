@@ -68,6 +68,7 @@ class Transformer(nn.Module):
 
         enc_inputs = self.pos_emb(enc_inputs)
         dec_inputs = self.pos_emb(dec_inputs)
+        print(enc_inputs.shape)
 
         enc_outputs = self.encoder(enc_inputs)
         dec_outputs = self.decoder(dec_inputs, enc_outputs)
