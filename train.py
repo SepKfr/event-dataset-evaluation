@@ -9,6 +9,7 @@ from optuna.samplers import TPESampler
 from optuna.trial import TrialState
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 from sklearn.utils import class_weight
+from torch import nn
 from torch.optim import Adam
 import torch
 from Utils.base_train import batch_sampled_data
@@ -247,7 +248,7 @@ class Train:
         # Train forecasting models
         def train_forecaster(predictor, predictor_1):
 
-            val_loss_mse = 1e10
+            val_loss_l1 = 1e10
 
             forecasting_optimizer = NoamOpt(Adam(predictor.parameters(), lr=0, betas=(0.9, 0.98), eps=1e-9),
                                             2, d_model, w_steps)
@@ -259,31 +260,39 @@ class Train:
                 tot_loss = 0
 
                 for trn_enc, trn_dec, trn_y, trn_y_forecasting in self.train:
-                    y_truee = trn_y_forecasting.to(self.device, dtype=torch.long)
-                    mse_loss = predictor(trn_enc.to(self.device), trn_dec.to(self.device), predictor_1, y_truee)
+                    train_y_true = trn_y_forecasting.to(self.device, dtype=torch.float)
+                    outputs_forecaster = predictor(trn_enc.to(self.device), trn_dec.to(self.device), predictor_1, train_y_true)
 
-                    tot_loss += mse_loss.item()
+                    if predictor_1 is not None:
+                        train_y_true = train_y_true - outputs_forecaster
+
+                    l1_loss = nn.L1Loss()(train_y_true, outputs_forecaster)
+                    tot_loss += l1_loss
 
                     forecasting_optimizer.zero_grad()
-                    mse_loss.backward()
+                    l1_loss.backward()
                     forecasting_optimizer.step_and_update_lr()
 
                 if e % 5 == 0:
                     print("Train epoch: {}, loss: {:.4f}".format(e, tot_loss))
 
                 predictor.eval()
-                test_losss = 0
+                test_loss = 0
 
                 for vad_enc, vad_dec, vad_y, vad_y_forecasting in self.valid:
-                    valid_y_true = vad_y_forecasting.to(self.device, dtype=torch.long)
-                    mse_loss = predictor(vad_enc.to(self.device), vad_dec.to(self.device), predictor_1, valid_y_true)
-                    test_losss += mse_loss
+                    valid_y_true = vad_y_forecasting.to(self.device, dtype=torch.float)
+                    outputs_forecaster = predictor(vad_enc.to(self.device), vad_dec.to(self.device), predictor_1, valid_y_true)
+                    if predictor_1 is not None:
+                        valid_y_true = valid_y_true - outputs_forecaster
+
+                    l1_loss = nn.L1Loss()(valid_y_true, outputs_forecaster)
+                    test_loss += l1_loss
 
                 if e % 5 == 0:
-                    print("Train epoch: {}, val loss: {:.4f}".format(e, test_losss))
+                    print("Train epoch: {}, val loss: {:.4f}".format(e, test_loss))
 
-                if test_losss < val_loss_mse:
-                    val_loss_mse = test_losss
+                if test_loss < val_loss_l1:
+                    val_loss_l1 = test_loss
                     if predictor_1 is None:
                         self.best_forecasting_model = predictor
                     else:

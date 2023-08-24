@@ -52,16 +52,12 @@ class Forecaster(nn.Module):
 
             dec_outputs = self.proj_down_dec(dec_outputs)
             outputs = self.proj_down_dec_res(dec_outputs_res)
-            residual = y_true - dec_outputs
-            loss = nn.L1Loss()(outputs.to(torch.float),
-                               residual.to(torch.float))
+
         else:
             enc_outputs, dec_outputs = self.forecaster(enc_inputs, dec_inputs)
             outputs = self.proj_down_dec(dec_outputs)
-            loss = nn.L1Loss()(outputs.to(torch.float),
-                               y_true.to(torch.float))
 
-        return loss
+        return outputs
 
     def predict(self, enc_inputs, dec_inputs, embed=True):
         """
