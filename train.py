@@ -1,6 +1,8 @@
 import argparse
-import json
+import re
+
 import numpy as np
+import openpyxl as openpyxl
 import optuna
 import os
 import pandas as pd
@@ -18,7 +20,7 @@ from classifier import Classifier
 from data_loader import ExperimentConfig
 from forecaster import Forecaster
 from modules.opt_model import NoamOpt
-
+from sklearn.metrics import classification_report
 
 '''
 This class is used for training and evaluating the neural classification models
@@ -225,8 +227,8 @@ class Train:
             os.makedirs(self.model_path)
 
         # Suggest hyperparameters for the current trial
-        d_model = trial.suggest_categorical("d_model", [16, 32])
-        stack_size = trial.suggest_categorical("stack_size", [1, 2])
+        d_model = trial.suggest_categorical("d_model", [16])
+        stack_size = trial.suggest_categorical("stack_size", [1])
         w_steps = trial.suggest_categorical("w_steps", [8000])
         n_heads = self.model_params['num_heads']
 
@@ -424,12 +426,34 @@ class Train:
 
         f1 = (2 * precision * recall) / (precision + recall)
 
-        # Create a dictionary to store the calculated metrics
+        class_report = classification_report(test_y_tot, predictions,
+                                             target_names=["normal", "abnormal"],
+                                             digits=3)
+
+        lines = class_report.strip().split('\n')
+        lines = lines[1:]
+        lines = [re.sub(r'\s+', ',', line) for line in lines]
+        lines = [line for line in lines if len(line) > 1]
+
+        # Extract class names and metrics from the report text
+        class_names = [line.split(',')[1] for line in lines[0:2]]
+        metrics = [line.split(',')[2:] for line in lines]
+
+        # Create a dictionary to store the report data
+        report_data = {}
+        for i, class_name in enumerate(class_names):
+            report_data[class_name] = {
+                'precision': float(metrics[i][0]),
+                'recall': float(metrics[i][1]),
+                'f1-score': float(metrics[i][2]),
+                'support': int(metrics[i][3])
+            }
+
         scores_divided = {
             "accuracy": "{:.3f}".format(accuracy),
             "f1_loss": "{:.3f}".format(f1),
             "precision": "{:.3f}".format(precision),
-            "recall": "{:.3f}".format(recall)
+            "recall": "{:.3f}".format(recall),
         }
 
         # Print and store accuracy
@@ -437,16 +461,23 @@ class Train:
         self.eval_results["{}".format(self.name)] = scores_divided
 
         # Store evaluation results in a JSON file
-        error_path = "Final_scores_{}_{}.json".format(self.exp_name, self.pred_len)
-        if os.path.exists(error_path):
-            with open(error_path) as json_file:
-                json_dat = json.load(json_file)
-                json_dat["{}".format(self.name)] = scores_divided
-            with open(error_path, "w") as json_file:
-                json.dump(json_dat, json_file)
+        score_path = "Final_scores.xlsx"
+
+        df = pd.DataFrame.from_dict(scores_divided, orient='index')
+        df_append = pd.DataFrame.from_dict(report_data, orient='index')
+        df = pd.concat([df, df_append])
+        if os.path.exists(score_path):
+            book = openpyxl.load_workbook(score_path)
+
+            with pd.ExcelWriter(score_path, engine='openpyxl') as writer:
+                writer.book = book
+                # Append the DataFrame to the existing sheet
+                df.to_excel(writer, sheet_name=self.name)
+
+            # Save the changes
+            book.save(score_path)
         else:
-            with open(error_path, "w") as json_file:
-                json.dump(self.eval_results, json_file)
+            df.to_excel(score_path, sheet_name=self.name)
 
 
 def main():
@@ -480,6 +511,7 @@ def main():
     # Loop over different prediction lengths
     for pred_len in [60]:
         for seed in seeds:
+
             np.random.seed(seed)
             random.seed(seed)
             torch.manual_seed(seed)
