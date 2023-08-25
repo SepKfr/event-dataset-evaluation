@@ -2,6 +2,8 @@ import random
 import numpy as np
 import torch
 import torch.nn as nn
+
+from modules.feedforward import PoswiseFeedForwardNet
 from modules.transformer import Transformer
 
 
@@ -39,6 +41,9 @@ class Classifier(nn.Module):
 
         self.final_projection = nn.Linear(config.d_model * config.src_input_size, n_classes)
         self.norm = nn.LayerNorm(config.d_model * config.src_input_size, device=device)
+        self.pos_ffn = PoswiseFeedForwardNet(
+            d_model=config.d_model * config.src_input_size,
+            d_ff=config.d_model * config.src_input_size * 4, seed=seed, device=device)
         self.class_weights = class_weights
 
     def forward(self, enc_inputs, dec_inputs, forecasting_model=None, residual_model=None,
@@ -57,7 +62,7 @@ class Classifier(nn.Module):
         if forecasting_model is not None and residual_model is not None:
             enc_outputs, dec_outputs = self.classifier(enc_inputs, dec_inputs)
             dec_outputs_res = residual_model.predict(enc_outputs, dec_outputs, embed=False)
-            logits = self.final_projection(dec_outputs + dec_outputs_res)
+            logits = self.final_projection(self.norm(dec_outputs + self.pos_ffn(dec_outputs_res)))
 
         else:
             enc_outputs, dec_outputs = self.classifier(enc_inputs, dec_inputs)
