@@ -450,6 +450,7 @@ class Train:
             }
 
         scores_divided = {
+            "name": self.name,
             "accuracy": "{:.3f}".format(accuracy),
             "f1_loss": "{:.3f}".format(f1),
             "precision": "{:.3f}".format(precision),
@@ -462,6 +463,7 @@ class Train:
 
         # Store evaluation results in a JSON file
         score_path = "Final_scores.xlsx"
+        sheet_name = "{}_{}".format(self.exp_name, self.pred_len)
 
         df = pd.DataFrame.from_dict(scores_divided, orient='index')
         df_append = pd.DataFrame.from_dict(report_data, orient='index')
@@ -472,12 +474,13 @@ class Train:
             with pd.ExcelWriter(score_path, engine='openpyxl') as writer:
                 writer.book = book
                 # Append the DataFrame to the existing sheet
-                df.to_excel(writer, sheet_name=self.name)
+                df.to_excel(writer, sheet_name=sheet_name, startrow=writer.sheets[sheet_name].max_row, index=True,
+                            header=False)
 
             # Save the changes
             book.save(score_path)
         else:
-            df.to_excel(score_path, sheet_name=self.name)
+            df.to_excel(score_path, sheet_name=sheet_name)
 
 
 def main():

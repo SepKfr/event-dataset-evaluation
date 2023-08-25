@@ -159,7 +159,7 @@ def batch_sampled_data(data, train_percent, max_samples, time_steps,
         :return: continuous target values.
         """
         y_true_2d = y_true.reshape(-1, 2)
-        y_true_cont = pd.DataFrame(y_true_2d).ewm(alpha=0.2).mean()
+        y_true_cont = pd.DataFrame(y_true_2d).ewm(alpha=2/3).mean()
         y_true_cont = y_true_cont.to_numpy()
         y_true_cont = torch.FloatTensor(y_true_cont)
         y_true_cont = y_true_cont.reshape(y_true.shape)
