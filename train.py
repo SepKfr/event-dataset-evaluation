@@ -470,12 +470,14 @@ class Train:
         df = pd.concat([df, df_append])
         if os.path.exists(score_path):
             book = openpyxl.load_workbook(score_path)
-
             with pd.ExcelWriter(score_path, engine='openpyxl') as writer:
                 writer.book = book
                 # Append the DataFrame to the existing sheet
-                df.to_excel(writer, sheet_name=sheet_name, startrow=writer.sheets[sheet_name].max_row, index=True,
-                            header=False)
+                if sheet_name in writer.sheets.keys():
+                    df.to_excel(writer, sheet_name=sheet_name, startrow=writer.sheets[sheet_name].max_row, index=True,
+                                header=False)
+                else:
+                    df.to_excel(score_path, sheet_name=sheet_name)
 
             # Save the changes
             book.save(score_path)
