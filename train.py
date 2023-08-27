@@ -227,8 +227,8 @@ class Train:
             os.makedirs(self.model_path)
 
         # Suggest hyperparameters for the current trial
-        d_model = trial.suggest_categorical("d_model", [16, 32])
-        stack_size = trial.suggest_categorical("stack_size", [1, 2])
+        d_model = trial.suggest_categorical("d_model", [16])
+        stack_size = trial.suggest_categorical("stack_size", [1])
         w_steps = trial.suggest_categorical("w_steps", [4000])
         n_heads = self.model_params['num_heads']
 
@@ -462,7 +462,7 @@ class Train:
         self.eval_results["{}".format(self.name)] = scores_divided
 
         # Store evaluation results in a JSON file
-        score_path = "Final_scores.xlsx"
+        score_path = "Final_scores_test.xlsx"
         sheet_name = "{}_{}".format(self.exp_name, self.pred_len)
 
         df = pd.DataFrame.from_dict(scores_divided, orient='index')
@@ -473,16 +473,16 @@ class Train:
             with pd.ExcelWriter(score_path, engine='openpyxl') as writer:
                 writer.book = book
                 # Append the DataFrame to the existing sheet
-                if sheet_name in writer.sheets.keys():
-                    df.to_excel(writer, sheet_name=sheet_name, startrow=writer.sheets[sheet_name].max_row, index=True,
-                                header=False)
+                if sheet_name in writer.book.sheetnames:
+                    sheet = writer.book[sheet_name]
+                    df.to_excel(writer, sheet_name=sheet_name, startrow=sheet.max_row, index=True, header=False)
                 else:
-                    df.to_excel(score_path, sheet_name=sheet_name)
+                    df.to_excel(writer, sheet_name=sheet_name, index=True, header=True)
 
             # Save the changes
             book.save(score_path)
         else:
-            df.to_excel(score_path, sheet_name=sheet_name)
+            df.to_excel(score_path, sheet_name=sheet_name, index=True, header=True)
 
 
 def main():
@@ -493,7 +493,7 @@ def main():
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description="preprocess argument parser")
     parser.add_argument("--name", type=str, default="autoformer")
-    parser.add_argument("--exp_name", type=str, default='us_accident')
+    parser.add_argument("--exp_name", type=str, default='sev_weather')
     parser.add_argument("--cuda", type=str, default="cuda:0")
     parser.add_argument("--n_trials", type=int, default=10)
 
