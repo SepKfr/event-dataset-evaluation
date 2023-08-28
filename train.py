@@ -227,8 +227,8 @@ class Train:
             os.makedirs(self.model_path)
 
         # Suggest hyperparameters for the current trial
-        d_model = trial.suggest_categorical("d_model", [16])
-        stack_size = trial.suggest_categorical("stack_size", [1])
+        d_model = trial.suggest_categorical("d_model", [16, 32])
+        stack_size = trial.suggest_categorical("stack_size", [1, 2])
         w_steps = trial.suggest_categorical("w_steps", [4000])
         n_heads = self.model_params['num_heads']
 
