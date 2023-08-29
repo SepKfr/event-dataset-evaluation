@@ -72,11 +72,11 @@ class Classifier(nn.Module):
             logits = logits[:, -self.pred_len:, :]
 
         if y_true is not None:
-            y_true_numpy = y_true.cpu().numpy()
+            y_true_numpy = y_true.reshape(-1).numpy()
             class_weights = class_weight.compute_class_weight('balanced',
                                                               classes=np.unique(y_true_numpy),
                                                               y=y_true_numpy)
-            class_weights = torch.tensor(class_weights, device=self.device, dtype=self.device)
+            class_weights = torch.tensor(class_weights, device=self.device, dtype=torch.float)
             y_true = y_true.to(self.device, dtype=torch.long).squeeze(1)
             y_true = torch.flatten(y_true, start_dim=0)
             outputs = logits.reshape(-1, 2)
