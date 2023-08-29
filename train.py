@@ -1,6 +1,5 @@
 import argparse
 import re
-
 import numpy as np
 import openpyxl as openpyxl
 import optuna
@@ -462,7 +461,7 @@ class Train:
         self.eval_results["{}".format(self.name)] = scores_divided
 
         # Store evaluation results in a JSON file
-        score_path = "Final_scores_test.xlsx"
+        score_path = "Final_scores.xlsx"
         sheet_name = "{}_{}".format(self.exp_name, self.pred_len)
 
         df = pd.DataFrame.from_dict(scores_divided, orient='index')
