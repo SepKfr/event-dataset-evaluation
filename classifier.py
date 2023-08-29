@@ -2,6 +2,7 @@ import random
 import numpy as np
 import torch
 import torch.nn as nn
+from sklearn.utils import class_weight
 
 from modules.feedforward import PoswiseFeedForwardNet
 from modules.transformer import Transformer
@@ -71,11 +72,16 @@ class Classifier(nn.Module):
             logits = logits[:, -self.pred_len:, :]
 
         if y_true is not None:
+            y_true_numpy = y_true.cpu().numpy()
+            class_weights = class_weight.compute_class_weight('balanced',
+                                                              classes=np.unique(y_true_numpy),
+                                                              y=y_true_numpy)
+            class_weights = torch.tensor(class_weights, device=self.device, dtype=self.device)
             y_true = y_true.to(self.device, dtype=torch.long).squeeze(1)
             y_true = torch.flatten(y_true, start_dim=0)
             outputs = logits.reshape(-1, 2)
             if self.class_weights is not None:
-                loss_val = nn.CrossEntropyLoss(self.class_weights)(outputs, y_true)
+                loss_val = nn.CrossEntropyLoss(class_weights)(outputs, y_true)
             else:
                 loss_val = nn.CrossEntropyLoss()(outputs, y_true)
 
