@@ -521,8 +521,8 @@ def main():
             torch.manual_seed(seed)
 
             #Train without weight adjustment and residual augmentation
-            Train(raw_data, args, pred_len, add_residual=False, use_weight=False,
-                  class_weights=class_weights, seed=seed)
+            # Train(raw_data, args, pred_len, add_residual=False, use_weight=False,
+            #       class_weights=class_weights, seed=seed)
 
             # Train without residual augmentation
             Train(raw_data, args, pred_len, add_residual=False, use_weight=True,
