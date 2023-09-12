@@ -161,9 +161,6 @@ class Train:
         # Get the maximum number of samples for calibration from the formatter
         train_max, valid_max = self.formatter.get_num_samples_for_calibration()
 
-        # Calculate the number of batches based on the training maximum
-        n_batches = int(train_max / self.batch_size)
-
         # Store the maximum number of samples for each set
         max_samples = (train_max, valid_max)
 
