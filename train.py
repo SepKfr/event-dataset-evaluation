@@ -419,8 +419,7 @@ class Train:
         class_weights = {0: self.class_weights[0], 1: self.class_weights[1]}
 
         # Calculate evaluation metrics
-        accuracy = accuracy_score(test_y_tot, predictions, average='weighted', labels=np.unique(test_y_tot),
-                                        sample_weight=[class_weights[y] for y in test_y_tot])
+        accuracy = accuracy_score(test_y_tot, predictions)
         precision = precision_score(test_y_tot, predictions, average='weighted', labels=np.unique(test_y_tot),
                                         sample_weight=[class_weights[y] for y in test_y_tot])
         recall = recall_score(test_y_tot, predictions, average='weighted', labels=np.unique(test_y_tot),
