@@ -186,9 +186,6 @@ class Train:
         # Create an Optuna study for hyperparameter optimization
         study = optuna.create_study(study_name=args.name,
                                     direction="maximize", pruner=optuna.pruners.HyperbandPruner())
-        # Optimize the study using the defined objective function and specified number of trials
-        study.optimize(self.objective, n_trials=args.n_trials)
-
         # parallelize optuna with joblib
         with joblib.Parallel(n_jobs=4) as parallel:
             study.optimize(self.objective, n_trials=args.n_trials, n_jobs=4)
