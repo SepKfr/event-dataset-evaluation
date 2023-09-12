@@ -1,5 +1,7 @@
 import argparse
 import re
+
+import joblib
 import numpy as np
 import openpyxl as openpyxl
 import optuna
@@ -183,10 +185,13 @@ class Train:
 
         # Create an Optuna study for hyperparameter optimization
         study = optuna.create_study(study_name=args.name,
-                                    direction="maximize", pruner=optuna.pruners.HyperbandPruner(),
-                                    sampler=TPESampler(seed=1234))
+                                    direction="maximize", pruner=optuna.pruners.HyperbandPruner())
         # Optimize the study using the defined objective function and specified number of trials
         study.optimize(self.objective, n_trials=args.n_trials)
+
+        # parallelize optuna with joblib
+        with joblib.Parallel(n_jobs=4) as parallel:
+            study.optimize(self.objective, n_trials=args.n_trials, n_jobs=4)
 
         # Get trials that were pruned and completed
         pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
@@ -229,7 +234,7 @@ class Train:
         d_model = trial.suggest_categorical("d_model", [16, 32])
         stack_size = trial.suggest_categorical("stack_size", [1, 2])
         w_steps = trial.suggest_categorical("w_steps", [4000])
-        n_heads = self.model_params['num_heads']
+        n_heads = trial.suggest_categorical("n_heads", [1, 8])
 
         # Check if the current set of hyperparameters has already been tested
         if [d_model, w_steps, stack_size] in self.param_history:
@@ -417,7 +422,8 @@ class Train:
         class_weights = {0: self.class_weights[0], 1: self.class_weights[1]}
 
         # Calculate evaluation metrics
-        accuracy = accuracy_score(test_y_tot, predictions)
+        accuracy = accuracy_score(test_y_tot, predictions, average='weighted', labels=np.unique(test_y_tot),
+                                        sample_weight=[class_weights[y] for y in test_y_tot])
         precision = precision_score(test_y_tot, predictions, average='weighted', labels=np.unique(test_y_tot),
                                         sample_weight=[class_weights[y] for y in test_y_tot])
         recall = recall_score(test_y_tot, predictions, average='weighted', labels=np.unique(test_y_tot),
@@ -460,29 +466,18 @@ class Train:
         print("Accuracy {:.4f}".format(accuracy))
         self.eval_results["{}".format(self.name)] = scores_divided
 
-        # Store evaluation results in a JSON file
-        score_path = "Final_scores.xlsx"
-        sheet_name = "{}_{}".format(self.exp_name, self.pred_len)
+        # Store evaluation results in a csv file
 
-        df = pd.DataFrame.from_dict(scores_divided, orient='index')
-        df_append = pd.DataFrame.from_dict(report_data, orient='index')
-        df = pd.concat([df, df_append])
+        score_path = "Final_scores.csv"
+        df = pd.DataFrame.from_dict(self.eval_results, orient='index')
+
         if os.path.exists(score_path):
-            book = openpyxl.load_workbook(score_path)
-            with pd.ExcelWriter(score_path, engine='openpyxl') as writer:
-                writer.book = book
-                # Append the DataFrame to the existing sheet
-                if sheet_name in writer.book.sheetnames:
-                    sheet = writer.book[sheet_name]
-                    df.to_excel(writer, sheet_name=sheet_name, startrow=sheet.max_row, index=True, header=False)
-                else:
-                    df.to_excel(writer, sheet_name=sheet_name, index=True, header=True)
 
-            # Save the changes
-            book.save(score_path)
+            df_old = pd.read_csv(score_path)
+            df_new = pd.concat([df_old, df], axis=0)
+            df_new.to_csv(score_path)
         else:
-            df.to_excel(score_path, sheet_name=sheet_name, index=True, header=True)
-
+            df.to_csv(score_path)
 
 def main():
     """
