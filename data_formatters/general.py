@@ -248,7 +248,7 @@ class GeneralFormatter(GenericDataFormatter):
             'total_time_steps': 60 * 2 + 2 * self.pred_len,
             'num_encoder_steps': 60 * 2,
             'num_decoder_steps': self.pred_len,
-            'num_epochs': 5,
+            'num_epochs': 50,
             'early_stopping_patience': 5,
             'multiprocessing_workers': 5
         }
@@ -265,6 +265,6 @@ class GeneralFormatter(GenericDataFormatter):
         """
         if num_train == -1:
 
-            return 8, 8
+            return 32000, 3840
         else:
-            return num_train, 2560
+            return num_train, 3840

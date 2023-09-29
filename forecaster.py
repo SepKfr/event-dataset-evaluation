@@ -23,6 +23,7 @@ class Forecaster(nn.Module):
 
         self.pred_len = pred_len
         self.residual = residual
+        self.d_model = config.d_model
 
         self.forecaster = Transformer(vocab_size=config.vocab_size,
                                       src_input_size=config.src_input_size,

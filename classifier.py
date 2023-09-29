@@ -28,6 +28,7 @@ class Classifier(nn.Module):
         torch.manual_seed(seed)
 
         self.pred_len = pred_len
+        self.d_model = config.d_model
         self.device = device
         self.divide = divide
 
@@ -62,7 +63,7 @@ class Classifier(nn.Module):
         loss_val = 0
         if forecasting_model is not None and residual_model is not None:
             enc_outputs, dec_outputs = self.classifier(enc_inputs, dec_inputs)
-            dec_outputs_res = residual_model.predict(enc_outputs, dec_outputs, embed=False)
+            dec_outputs_res = residual_model.predict(enc_inputs, dec_inputs)
             logits = self.final_projection(self.norm(dec_outputs + self.pos_ffn(dec_outputs_res)))
 
         else:

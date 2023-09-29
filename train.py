@@ -224,7 +224,7 @@ class Train:
             os.makedirs(self.model_path)
 
         # Suggest hyperparameters for the current trial
-        d_model = trial.suggest_categorical("d_model", [16, 32])
+        d_model = trial.suggest_categorical("d_model", [64])
         stack_size = trial.suggest_categorical("stack_size", [1, 2])
         w_steps = trial.suggest_categorical("w_steps", [4000])
         n_heads = trial.suggest_categorical("n_heads", [1, 8])
@@ -509,12 +509,12 @@ def main():
             torch.manual_seed(seed)
 
             #Train without weight adjustment and residual augmentation
-            # Train(raw_data, args, pred_len, add_residual=False, use_weight=False,
-            #       class_weights=class_weights, seed=seed)
+            Train(raw_data, args, pred_len, add_residual=False, use_weight=False,
+                  class_weights=class_weights, seed=seed)
 
             # Train without residual augmentation
-            # Train(raw_data, args, pred_len, add_residual=False, use_weight=True,
-            #       class_weights=class_weights, seed=seed)
+            Train(raw_data, args, pred_len, add_residual=False, use_weight=True,
+                  class_weights=class_weights, seed=seed)
 
             #Train with residual augmentation
             Train(raw_data, args, pred_len, add_residual=True, use_weight=True,
