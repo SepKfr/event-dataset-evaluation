@@ -41,10 +41,11 @@ class DecoderLayer(nn.Module):
         self.dropout2 = Dropout(dropout)
 
     def forward(self, x, memory):
-        x = self.norm1(x + self.self_attention(x, x, x))
-        x = self.norm2(x + self.dec_enc_attn(x, memory, memory))
-        x = self.norm3(x + self.pos_ffn(x))
-        return x
+
+        x1 = self.norm1(x + self.self_attention(x, x, x))
+        x2 = self.norm2(x1 + self.dec_enc_attn(x1, memory, memory))
+        x3 = self.norm3(x2 + self.pos_ffn(x2))
+        return x3
 
 
 class Decoder(nn.Module):

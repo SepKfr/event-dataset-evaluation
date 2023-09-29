@@ -3,12 +3,10 @@ import re
 
 import joblib
 import numpy as np
-import openpyxl as openpyxl
 import optuna
 import os
 import pandas as pd
 import random
-from optuna.samplers import TPESampler
 from optuna.trial import TrialState
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 from sklearn.utils import class_weight
@@ -22,6 +20,7 @@ from data_loader import ExperimentConfig
 from forecaster import Forecaster
 from modules.opt_model import NoamOpt
 from sklearn.metrics import classification_report
+torch.autograd.set_detect_anomaly(True)
 
 '''
 This class is used for training and evaluating the neural classification models
@@ -185,7 +184,7 @@ class Train:
                                     direction="maximize", pruner=optuna.pruners.HyperbandPruner())
         # parallelize optuna with joblib
         with joblib.Parallel(n_jobs=4) as parallel:
-            study.optimize(self.objective, n_trials=args.n_trials, n_jobs=4)
+            study.optimize(self.objective, n_trials=args.n_trials, n_jobs=6)
 
         # Get trials that were pruned and completed
         pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
@@ -461,7 +460,7 @@ class Train:
 
         # Store evaluation results in a csv file
 
-        score_path = "Final_scores.csv"
+        score_path = "Bosch_Final_scores.csv"
         df = pd.DataFrame.from_dict(self.eval_results, orient='index')
 
         if os.path.exists(score_path):
@@ -469,6 +468,7 @@ class Train:
             df_old = pd.read_csv(score_path)
             df_new = pd.concat([df_old, df], axis=0)
             df_new.to_csv(score_path)
+
         else:
             df.to_csv(score_path)
 

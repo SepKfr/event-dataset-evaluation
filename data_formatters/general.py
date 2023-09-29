@@ -233,7 +233,7 @@ class GeneralFormatter(GenericDataFormatter):
 
         model_params = {
             'hidden_layer_size': [8],
-            'minibatch_size': [512],
+            'minibatch_size': [8],
             'num_heads': 8,
             'stack_size': [1],
             'context_lengths': [1, 3, 6, 9]
@@ -248,7 +248,7 @@ class GeneralFormatter(GenericDataFormatter):
             'total_time_steps': 60 * 2 + 2 * self.pred_len,
             'num_encoder_steps': 60 * 2,
             'num_decoder_steps': self.pred_len,
-            'num_epochs': 50,
+            'num_epochs': 5,
             'early_stopping_patience': 5,
             'multiprocessing_workers': 5
         }
@@ -265,6 +265,6 @@ class GeneralFormatter(GenericDataFormatter):
         """
         if num_train == -1:
 
-            return 32000, 2560
+            return 8, 8
         else:
             return num_train, 2560
