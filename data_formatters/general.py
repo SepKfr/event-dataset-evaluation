@@ -232,7 +232,7 @@ class GeneralFormatter(GenericDataFormatter):
         """Returns default optimised model parameters."""
 
         model_params = {
-            'hidden_layer_size': [8],
+            'hidden_layer_size': [256],
             'minibatch_size': [8],
             'num_heads': 8,
             'stack_size': [1],
