@@ -183,8 +183,8 @@ class Train:
         study = optuna.create_study(study_name=args.name,
                                     direction="maximize", pruner=optuna.pruners.HyperbandPruner())
         # parallelize optuna with joblib
-        with joblib.Parallel(n_jobs=4) as parallel:
-            study.optimize(self.objective, n_trials=args.n_trials, n_jobs=6)
+
+        study.optimize(self.objective, n_trials=args.n_trials, n_jobs=2)
 
         # Get trials that were pruned and completed
         pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
@@ -509,12 +509,12 @@ def main():
             torch.manual_seed(seed)
 
             #Train without weight adjustment and residual augmentation
-            Train(raw_data, args, pred_len, add_residual=False, use_weight=False,
-                  class_weights=class_weights, seed=seed)
+            # Train(raw_data, args, pred_len, add_residual=False, use_weight=False,
+            #       class_weights=class_weights, seed=seed)
 
             # Train without residual augmentation
-            Train(raw_data, args, pred_len, add_residual=False, use_weight=True,
-                  class_weights=class_weights, seed=seed)
+            # Train(raw_data, args, pred_len, add_residual=False, use_weight=True,
+            #       class_weights=class_weights, seed=seed)
 
             #Train with residual augmentation
             Train(raw_data, args, pred_len, add_residual=True, use_weight=True,
