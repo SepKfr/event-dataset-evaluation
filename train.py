@@ -184,7 +184,7 @@ class Train:
                                     direction="maximize", pruner=optuna.pruners.HyperbandPruner())
         # parallelize optuna with joblib
 
-        study.optimize(self.objective, n_trials=args.n_trials, n_jobs=2)
+        study.optimize(self.objective, n_trials=args.n_trials, n_jobs=1)
 
         # Get trials that were pruned and completed
         pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
@@ -225,9 +225,9 @@ class Train:
 
         # Suggest hyperparameters for the current trial
         d_model = trial.suggest_categorical("d_model", [64])
-        stack_size = trial.suggest_categorical("stack_size", [1, 2])
+        stack_size = trial.suggest_categorical("stack_size", [2])
         w_steps = trial.suggest_categorical("w_steps", [4000])
-        n_heads = trial.suggest_categorical("n_heads", [1, 8])
+        n_heads = trial.suggest_categorical("n_heads", [8])
 
         # Check if the current set of hyperparameters has already been tested
         if [d_model, w_steps, stack_size] in self.param_history:
@@ -509,12 +509,12 @@ def main():
             torch.manual_seed(seed)
 
             #Train without weight adjustment and residual augmentation
-            # Train(raw_data, args, pred_len, add_residual=False, use_weight=False,
-            #       class_weights=class_weights, seed=seed)
+            Train(raw_data, args, pred_len, add_residual=False, use_weight=False,
+                  class_weights=class_weights, seed=seed)
 
             # Train without residual augmentation
-            # Train(raw_data, args, pred_len, add_residual=False, use_weight=True,
-            #       class_weights=class_weights, seed=seed)
+            Train(raw_data, args, pred_len, add_residual=False, use_weight=True,
+                  class_weights=class_weights, seed=seed)
 
             #Train with residual augmentation
             Train(raw_data, args, pred_len, add_residual=True, use_weight=True,
