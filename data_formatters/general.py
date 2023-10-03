@@ -265,6 +265,6 @@ class GeneralFormatter(GenericDataFormatter):
         """
         if num_train == -1:
 
-            return 32000, 3840
+            return 6400, 640
         else:
-            return num_train, 3840
+            return num_train, 640
