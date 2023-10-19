@@ -74,7 +74,7 @@ class Train:
         self.num_epochs = self.params['num_epochs']    # Total number of epochs
 
         # Name of the model
-        self.name = "{}{}{}{}_{}".format(args.name, args.exp_name, "_weight" if use_weight else "",
+        self.name = "{}_{}{}{}_{}".format(args.name, args.exp_name, "_weight" if use_weight else "",
                                        "_add_residual" if self.add_residual else "", self.seed)
 
         # Save the history of parameters for optuna to avoid repeating on already processed hyper-parameters
@@ -294,7 +294,7 @@ class Train:
                     else:
                         self.best_res_model = predictor
                     torch.save({'model_state_dict': predictor.state_dict()},
-                               os.path.join(self.model_path, "{}_{}".format(self.name, self.seed)))
+                               os.path.join(self.model_path, "{}".format(self.name)))
 
         # Train forecasting models if residuals are added
         if self.add_residual:
@@ -501,7 +501,7 @@ def main():
     seeds = np.random.randint(1000, 9999, 3)
 
     # Loop over different prediction lengths
-    for pred_len in [60]:
+    for pred_len in [60, 120, 240]:
         for seed in seeds:
 
             np.random.seed(seed)
@@ -509,12 +509,12 @@ def main():
             torch.manual_seed(seed)
 
             #Train without weight adjustment and residual augmentation
-            # Train(raw_data, args, pred_len, add_residual=False, use_weight=False,
-            #       class_weights=class_weights, seed=seed)
+            Train(raw_data, args, pred_len, add_residual=False, use_weight=False,
+                  class_weights=class_weights, seed=seed)
 
             # Train without residual augmentation
-            # Train(raw_data, args, pred_len, add_residual=False, use_weight=True,
-            #       class_weights=class_weights, seed=seed)
+            Train(raw_data, args, pred_len, add_residual=False, use_weight=True,
+                  class_weights=class_weights, seed=seed)
 
             #Train with residual augmentation
             Train(raw_data, args, pred_len, add_residual=True, use_weight=True,
