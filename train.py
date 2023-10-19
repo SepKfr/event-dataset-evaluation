@@ -489,6 +489,10 @@ def main():
 
     args = parser.parse_args()
 
+    print("Standalone without weight adjustment:", args.initial)
+    print("Standalone with weight adjustment:", args.weight)
+    print("Ours:", args.res_class)
+
     # Construct the path to the dataset CSV file
     data_csv_path = "datasets/{}.csv".format(args.exp_name)
 
