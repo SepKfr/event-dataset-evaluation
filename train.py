@@ -485,7 +485,7 @@ def main():
     parser.add_argument("--n_trials", type=int, default=10)
     parser.add_argument("--initial", type=lambda x: (str(x).lower() == 'true'), default=False)
     parser.add_argument("--weight", type=lambda x: (str(x).lower() == 'true'), default=False)
-    parser.add_argument("--res-class", type=lambda x: (str(x).lower() == 'true'), default=False)
+    parser.add_argument("--res_class", type=lambda x: (str(x).lower() == 'true'), default=False)
 
     args = parser.parse_args()
 
@@ -510,18 +510,20 @@ def main():
             np.random.seed(seed)
             random.seed(seed)
             torch.manual_seed(seed)
+            if args.initial:
+                #Train without weight adjustment and residual augmentation
+                Train(raw_data, args, pred_len, add_residual=False, use_weight=False,
+                      class_weights=class_weights, seed=seed)
 
-            #Train without weight adjustment and residual augmentation
-            Train(raw_data, args, pred_len, add_residual=False, use_weight=False,
-                  class_weights=class_weights, seed=seed)
+            if args.weight:
+                # Train without residual augmentation
+                Train(raw_data, args, pred_len, add_residual=False, use_weight=True,
+                      class_weights=class_weights, seed=seed)
 
-            # Train without residual augmentation
-            Train(raw_data, args, pred_len, add_residual=False, use_weight=True,
-                  class_weights=class_weights, seed=seed)
-
-            #Train with residual augmentation
-            Train(raw_data, args, pred_len, add_residual=True, use_weight=True,
-                  class_weights=class_weights, seed=seed)
+            if args.res_class:
+                #Train with residual augmentation
+                Train(raw_data, args, pred_len, add_residual=True, use_weight=True,
+                      class_weights=class_weights, seed=seed)
 
 
 if __name__ == '__main__':
