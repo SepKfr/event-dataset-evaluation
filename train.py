@@ -77,6 +77,8 @@ class Train:
         self.name = "{}_{}_{}{}{}_{}".format(args.name, args.exp_name, self.pred_len, "_weight" if use_weight else "",
                                        "_add_residual" if self.add_residual else "", self.seed)
 
+        print("running...", self.name)
+
         # Save the history of parameters for optuna to avoid repeating on already processed hyper-parameters
         self.param_history = []
         self.eval_results = dict()  # Saving evaluation results
