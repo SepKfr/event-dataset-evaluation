@@ -74,7 +74,7 @@ class Train:
         self.num_epochs = self.params['num_epochs']    # Total number of epochs
 
         # Name of the model
-        self.name = "{}_{}{}{}_{}".format(args.name, args.exp_name, "_weight" if use_weight else "",
+        self.name = "{}_{}_{}{}{}_{}".format(args.name, args.exp_name, self.pred_len, "_weight" if use_weight else "",
                                        "_add_residual" if self.add_residual else "", self.seed)
 
         # Save the history of parameters for optuna to avoid repeating on already processed hyper-parameters
