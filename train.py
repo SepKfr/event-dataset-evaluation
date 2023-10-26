@@ -457,7 +457,7 @@ def main():
     parser.add_argument("--n_trials", type=int, default=10)
     parser.add_argument("--initial", type=lambda x: (str(x).lower() == 'true'), default=False)
     parser.add_argument("--weight", type=lambda x: (str(x).lower() == 'true'), default=False)
-    parser.add_argument("--res_class", type=lambda x: (str(x).lower() == 'true'), default=True)
+    parser.add_argument("--res_class", type=lambda x: (str(x).lower() == 'true'), default=False)
 
     args = parser.parse_args()
 

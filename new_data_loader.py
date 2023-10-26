@@ -138,13 +138,13 @@ class DataLoader:
             y_list.append(y[0].unsqueeze(-1))
 
         for _, y in data_loader_2:
-            y_true_con.append(y[0])
+            y = torch.stack(list(itertools.chain.from_iterable(y[0])))
+            y_true_con.append(y.reshape(self.batch_size, self.pred_len, -1))
 
         x_enc = torch.stack(list(itertools.chain.from_iterable(x_enc_list)))
         x_dec = torch.stack(list(itertools.chain.from_iterable(x_dec_list)))
         y = torch.stack(list(itertools.chain.from_iterable(y_list)))
         y_true_con = torch.stack(list(itertools.chain.from_iterable(y_true_con)))
-        y_true_con = y_true_con.permute(1, 2, 0)
 
         tensor_dataset = TensorDataset(x_enc,
                                        x_dec,
