@@ -17,5 +17,5 @@ class PositionalEncoding(nn.Module):
 
     def forward(self, X):
 
-        X = X + self.P[:, :X.shape[1], :].to(X.device)
+        X = X + self.P[:, :X.shape[1], :]
         return X
