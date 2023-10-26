@@ -455,7 +455,7 @@ def main():
     parser.add_argument("--exp_name", type=str, default='sev_weather')
     parser.add_argument("--cuda", type=str, default="cuda:0")
     parser.add_argument("--n_trials", type=int, default=10)
-    parser.add_argument("--initial", type=lambda x: (str(x).lower() == 'true'), default=True)
+    parser.add_argument("--initial", type=lambda x: (str(x).lower() == 'true'), default=False)
     parser.add_argument("--weight", type=lambda x: (str(x).lower() == 'true'), default=False)
     parser.add_argument("--res_class", type=lambda x: (str(x).lower() == 'true'), default=False)
 
