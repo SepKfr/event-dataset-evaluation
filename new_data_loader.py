@@ -145,6 +145,7 @@ class DataLoader:
         x_dec = torch.stack(list(itertools.chain.from_iterable(x_dec_list)))
         y = torch.stack(list(itertools.chain.from_iterable(y_list)))
         y_true_con = torch.stack(list(itertools.chain.from_iterable(y_true_con)))
+        print(y_true_con.shape)
 
         tensor_dataset = TensorDataset(x_enc,
                                        x_dec,

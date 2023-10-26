@@ -80,9 +80,9 @@ class Train:
                                       max_encoder_length=96,
                                       pred_len=pred_len,
                                       target_col=target_col,
-                                      max_train_sample=6400,
-                                      max_test_sample=640,
-                                      batch_size=128) # Split and organize data
+                                      max_train_sample=640,
+                                      max_test_sample=64,
+                                      batch_size=64) # Split and organize data
         self.run_optuna(args)  # Run optuna (train and validate)
         self.evaluate()        # Evaluate the model
 
