@@ -7,8 +7,9 @@ import optuna
 import os
 import pandas as pd
 import random
+from new_data_loader import DataLoader
 from optuna.trial import TrialState
-from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+from sklearn.metrics import balanced_accuracy_score, f1_score, precision_score, recall_score
 from sklearn.utils import class_weight
 from torch import nn
 from torch.optim import Adam
@@ -46,21 +47,13 @@ class Train:
         :param use_weight: Whether to use weights
         :param seed: The random seed initialization
         '''
-
-        # Configuration specific to each experiment
-        config = ExperimentConfig(pred_len, args.exp_name)
-
         # Data attributes
         self.data = data
         self.len_data = len(data)
 
-        # Access experiment-related information
-        self.formatter = config.make_data_formatter()
-        self.params = self.formatter.get_experiment_params()
-        self.total_time_steps = self.params['total_time_steps']  # Total time steps = len(input) + len(output)
-        self.num_encoder_steps = self.params['num_encoder_steps']  # Total number of steps assigned to encoder
-        self.column_definition = self.params["column_definition"]  # Definition of each column in the dataset
+        target_col = "target"
 
+        # Access experiment-related information
         # Model settings
         self.add_residual = add_residual  # Whether to add residuals
         self.use_weight = use_weight      # Whether to use weights
@@ -69,10 +62,7 @@ class Train:
         self.seed = seed           # Random seed for reproducibility purposes
         self.device = torch.device(args.cuda if torch.cuda.is_available() else "cpu")   # Use GPU if available
         self.model_path = "models_{}_{}".format(args.exp_name, pred_len)        # Path where the model is saved
-        self.model_params = self.formatter.get_default_model_params()           # Parameters of each model
-        self.batch_size = self.model_params['minibatch_size'][0]                # Size of batch
-        self.num_epochs = self.params['num_epochs']    # Total number of epochs
-
+        self.num_epochs = 50
         # Name of the model
         self.name = "{}_{}_{}{}{}_{}".format(args.name, args.exp_name, self.pred_len, "_weight" if use_weight else "",
                                        "_add_residual" if self.add_residual else "", self.seed)
@@ -86,7 +76,13 @@ class Train:
         self.best_model = None  # Save the classification model with the best accuracy score
         self.best_forecasting_model = None  # Save the forecasting model with the best L1 loss
         self.best_res_model = None  # Save the residual model with the best L1 loss
-        self.train, self.valid, self.test = self.split_data()  # Split and organize data
+        self.data_loader = DataLoader(exp_name=args.exp_name,
+                                      max_encoder_length=96,
+                                      pred_len=pred_len,
+                                      target_col=target_col,
+                                      max_train_sample=6400,
+                                      max_test_sample=640,
+                                      batch_size=128) # Split and organize data
         self.run_optuna(args)  # Run optuna (train and validate)
         self.evaluate()        # Evaluate the model
 
@@ -132,7 +128,7 @@ class Train:
             residual_model = None
 
         # Get the type of data for match for class weights
-        _, _, train_y, _ = next(iter(self.train))
+        _, _, train_y, _ = next(iter(self.data_loader.train_loader))
 
         # Convert class_weights to a tensor on the specified device
         if self.use_weight:
@@ -148,31 +144,6 @@ class Train:
 
         # Return the main model, forecasting_model, and residual_model
         return model, forecasting_model, residual_model
-
-    def split_data(self):
-        """
-        Split the input data into training, validation, and test sets, and organize them into batches.
-
-        :return: Training, validation, and test datasets, along with the number of training batches.
-        """
-
-        # Transform raw data using the formatter
-        data = self.formatter.transform_data(self.data)
-
-        # Get the maximum number of samples for calibration from the formatter
-        train_max, valid_max = self.formatter.get_num_samples_for_calibration()
-
-        # Store the maximum number of samples for each set
-        max_samples = (train_max, valid_max)
-
-        # Batch the sampled data into training, validation, and test sets
-        train, valid, test = batch_sampled_data(data, 0.8, max_samples, self.params['total_time_steps'],
-                                                self.params['num_encoder_steps'], self.pred_len,
-                                                self.params["column_definition"],
-                                                self.batch_size)
-
-        # Return the organized datasets and the number of training batches
-        return train, valid, test
 
     def run_optuna(self, args):
         """
@@ -215,11 +186,11 @@ class Train:
         """
 
         # Obtain a batch of training data to define the total number of features
-        train_enc, train_dec, train_y, y_true = next(iter(self.train))
+        train_enc, train_dec, train_y, y_true = next(iter(self.data_loader.train_loader))
         src_input_size = train_enc.shape[2]
 
         # Get the maximum number of unique classes (vocabulary size)
-        vocab_size = max(self.formatter.get_num_classes())
+        vocab_size = max(self.data_loader.num_classes)
 
         # Check if the model path exists, if not, create it
         if not os.path.exists(self.model_path):
@@ -257,7 +228,7 @@ class Train:
 
                 tot_loss = 0
 
-                for trn_enc, trn_dec, trn_y, trn_y_forecasting in self.train:
+                for trn_enc, trn_dec, trn_y, trn_y_forecasting in self.data_loader.train_loader:
                     train_y_true = trn_y_forecasting.to(self.device)
                     outputs_forecaster = predictor(trn_enc.to(self.device), trn_dec.to(self.device))
 
@@ -277,7 +248,7 @@ class Train:
                 predictor.eval()
                 test_loss = 0
 
-                for vad_enc, vad_dec, vad_y, vad_y_forecasting in self.valid:
+                for vad_enc, vad_dec, vad_y, vad_y_forecasting in self.data_loader.valid_loader:
                     valid_y_true = vad_y_forecasting.to(self.device)
                     outputs_forecaster = predictor(vad_enc.to(self.device), vad_dec.to(self.device))
                     if residual:
@@ -316,7 +287,7 @@ class Train:
             model.train()
 
             total_loss = 0
-            for train_enc, train_dec, train_y, _ in self.train:
+            for train_enc, train_dec, train_y, _ in self.data_loader.train_loader:
 
                 outputs, loss = model(train_enc.to(self.device), train_dec.to(self.device),
                                       forecasting_model=self.best_forecasting_model,
@@ -336,7 +307,7 @@ class Train:
             sum_accuracy = 0
             sum_f1 = 0
             i = 0
-            for valid_enc, valid_dec, valid_y, _ in self.valid:
+            for valid_enc, valid_dec, valid_y, _ in self.data_loader.valid_loader:
 
                 outputs, _ = model(valid_enc.to(self.device), valid_dec.to(self.device),
                                    self.best_forecasting_model,
@@ -349,7 +320,7 @@ class Train:
                 valid_y = torch.flatten(valid_y, start_dim=0).cpu().detach().numpy()
                 outputs = outputs.reshape(-1).cpu().detach().numpy()
 
-                sum_accuracy += accuracy_score(outputs, valid_y)
+                sum_accuracy += balanced_accuracy_score(outputs, valid_y)
                 class_weights = {0: self.class_weights[0], 1: self.class_weights[1]}
 
                 if self.use_weight:
@@ -384,8 +355,8 @@ class Train:
         """
 
         # Obtain test labels and total number of batches
-        _, _, test_y, _ = next(iter(self.test))
-        total_b = len(list(iter(self.test)))
+        _, _, test_y, _ = next(iter(self.data_loader.test_loader))
+        total_b = len(list(iter(self.data_loader.test_loader)))
 
         # Set the best model in evaluation mode
         self.best_model.eval()
@@ -398,7 +369,7 @@ class Train:
         j = 0
 
         # Loop through test data batches
-        for test_enc, test_dec, test_y, _ in self.test:
+        for test_enc, test_dec, test_y, _ in self.data_loader.test_loader:
             # Get model predictions
             output, _ = self.best_model(test_enc.to(self.device), test_dec.to(self.device),
                                         self.best_forecasting_model, self.best_res_model)
@@ -417,7 +388,7 @@ class Train:
         class_weights = {0: self.class_weights[0], 1: self.class_weights[1]}
 
         # Calculate evaluation metrics
-        accuracy = accuracy_score(test_y_tot, predictions)
+        accuracy = balanced_accuracy_score(test_y_tot, predictions)
         precision = precision_score(test_y_tot, predictions, average='weighted', labels=np.unique(test_y_tot),
                                         sample_weight=[class_weights[y] for y in test_y_tot])
         recall = recall_score(test_y_tot, predictions, average='weighted', labels=np.unique(test_y_tot),
@@ -449,7 +420,6 @@ class Train:
             }
 
         scores_divided = {
-            "name": self.name,
             "accuracy": "{:.3f}".format(accuracy),
             "f1_loss": "{:.3f}".format(f1),
             "precision": "{:.3f}".format(precision),
@@ -485,7 +455,7 @@ def main():
     parser.add_argument("--exp_name", type=str, default='sev_weather')
     parser.add_argument("--cuda", type=str, default="cuda:0")
     parser.add_argument("--n_trials", type=int, default=10)
-    parser.add_argument("--initial", type=lambda x: (str(x).lower() == 'true'), default=False)
+    parser.add_argument("--initial", type=lambda x: (str(x).lower() == 'true'), default=True)
     parser.add_argument("--weight", type=lambda x: (str(x).lower() == 'true'), default=False)
     parser.add_argument("--res_class", type=lambda x: (str(x).lower() == 'true'), default=False)
 
