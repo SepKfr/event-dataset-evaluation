@@ -111,7 +111,7 @@ class DataLoader:
         ) if t == "value" else TimeSeriesDataSet(
             data,
             group_ids=["group"],
-            target="c",
+            target=["value", "c"],
             time_idx="time_idx",
             min_encoder_length=min_encoder_length,
             max_encoder_length=self.max_encoder_length,
@@ -144,6 +144,7 @@ class DataLoader:
         x_dec = torch.stack(list(itertools.chain.from_iterable(x_dec_list)))
         y = torch.stack(list(itertools.chain.from_iterable(y_list)))
         y_true_con = torch.stack(list(itertools.chain.from_iterable(y_true_con)))
+        y_true_con = y_true_con.permute(1, 2, 0)
 
         tensor_dataset = TensorDataset(x_enc,
                                        x_dec,
