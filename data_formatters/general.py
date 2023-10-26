@@ -34,23 +34,6 @@ class GeneralFormatter(GenericDataFormatter):
       experiment.
     identifiers: Entity identifiers used in experiments.
     """
-
-    _column_definition = [
-      ('id', DataTypes.REAL_VALUED, InputTypes.ID),
-      ('seconds_from_start', DataTypes.REAL_VALUED, InputTypes.TIME),
-      ('anomaly', DataTypes.CATEGORICAL, InputTypes.TARGET),
-      ('changepoint', DataTypes.CATEGORICAL, InputTypes.KNOWN_INPUT),
-      ('Volume Flow RateRMS', DataTypes.REAL_VALUED, InputTypes.KNOWN_INPUT),
-      ('Voltage', DataTypes.REAL_VALUED, InputTypes.KNOWN_INPUT),
-      ('Thermocouple', DataTypes.REAL_VALUED, InputTypes.KNOWN_INPUT),
-      ('Temperature', DataTypes.REAL_VALUED, InputTypes.KNOWN_INPUT),
-      ('Pressure', DataTypes.REAL_VALUED, InputTypes.KNOWN_INPUT),
-      ('Current', DataTypes.REAL_VALUED, InputTypes.KNOWN_INPUT),
-      ('Accelerometer2RMS', DataTypes.REAL_VALUED, InputTypes.KNOWN_INPUT),
-      ('Accelerometer1RMS', DataTypes.REAL_VALUED, InputTypes.KNOWN_INPUT),
-      ('categorical_id', DataTypes.CATEGORICAL, InputTypes.STATIC_INPUT),
-    ]
-
     def __init__(self, pred_len):
         """Initialises formatter."""
 
@@ -233,7 +216,7 @@ class GeneralFormatter(GenericDataFormatter):
 
         model_params = {
             'hidden_layer_size': [8],
-            'minibatch_size': [256],
+            'minibatch_size': [128],
             'num_heads': 8,
             'stack_size': [1],
             'context_lengths': [1, 3, 6, 9]
@@ -265,6 +248,6 @@ class GeneralFormatter(GenericDataFormatter):
         """
         if num_train == -1:
 
-            return 256, 256
+            return 6400, 640
         else:
             return num_train, 640
