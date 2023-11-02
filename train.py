@@ -8,7 +8,7 @@ import os
 import pandas as pd
 import random
 from optuna.trial import TrialState
-from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+from sklearn.metrics import balanced_accuracy_score, f1_score, precision_score, recall_score
 from sklearn.utils import class_weight
 from torch import nn
 from torch.optim import Adam
@@ -349,7 +349,7 @@ class Train:
                 valid_y = torch.flatten(valid_y, start_dim=0).cpu().detach().numpy()
                 outputs = outputs.reshape(-1).cpu().detach().numpy()
 
-                sum_accuracy += accuracy_score(outputs, valid_y)
+                sum_accuracy += balanced_accuracy_score(outputs, valid_y)
                 class_weights = {0: self.class_weights[0], 1: self.class_weights[1]}
 
                 if self.use_weight:
@@ -417,7 +417,7 @@ class Train:
         class_weights = {0: self.class_weights[0], 1: self.class_weights[1]}
 
         # Calculate evaluation metrics
-        accuracy = accuracy_score(test_y_tot, predictions)
+        accuracy = balanced_accuracy_score(test_y_tot, predictions)
         precision = precision_score(test_y_tot, predictions, average='weighted', labels=np.unique(test_y_tot),
                                         sample_weight=[class_weights[y] for y in test_y_tot])
         recall = recall_score(test_y_tot, predictions, average='weighted', labels=np.unique(test_y_tot),
@@ -449,7 +449,6 @@ class Train:
             }
 
         scores_divided = {
-            "name": self.name,
             "accuracy": "{:.3f}".format(accuracy),
             "f1_loss": "{:.3f}".format(f1),
             "precision": "{:.3f}".format(precision),
@@ -462,7 +461,7 @@ class Train:
 
         # Store evaluation results in a csv file
 
-        score_path = "Bosch_Final_scores.csv"
+        score_path = "Bosch_final_scores.csv"
         df = pd.DataFrame.from_dict(self.eval_results, orient='index')
 
         if os.path.exists(score_path):
@@ -507,15 +506,13 @@ def main():
                                                       y=train_y_weights)
 
     random.seed(1234)
-    seeds = np.random.randint(1000, 9999, 3)
+    seed = np.random.randint(1000, 9999, 1)
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.manual_seed(seed)
 
     # Loop over different prediction lengths
     for pred_len in [60, 120, 240]:
-        for seed in seeds:
-
-            np.random.seed(seed)
-            random.seed(seed)
-            torch.manual_seed(seed)
             if args.initial:
                 #Train without weight adjustment and residual augmentation
                 Train(raw_data, args, pred_len, add_residual=False, use_weight=False,
