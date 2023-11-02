@@ -506,7 +506,8 @@ def main():
                                                       y=train_y_weights)
 
     random.seed(1234)
-    seed = np.random.randint(1000, 9999, 1)
+    seed = np.random.randint(1000, 9999, 1)[0]
+
     np.random.seed(seed)
     random.seed(seed)
     torch.manual_seed(seed)
