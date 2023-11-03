@@ -186,7 +186,7 @@ class Train:
                                     direction="maximize", pruner=optuna.pruners.HyperbandPruner())
         # parallelize optuna with joblib
 
-        study.optimize(self.objective, n_trials=args.n_trials, n_jobs=1)
+        study.optimize(self.objective, n_trials=args.n_trials, n_jobs=2)
 
         # Get trials that were pruned and completed
         pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
@@ -227,7 +227,7 @@ class Train:
 
         # Suggest hyperparameters for the current trial
         d_model = trial.suggest_categorical("d_model", [64])
-        stack_size = trial.suggest_categorical("stack_size", [2])
+        stack_size = trial.suggest_categorical("stack_size", [1, 2])
         w_steps = trial.suggest_categorical("w_steps", [4000])
         n_heads = trial.suggest_categorical("n_heads", [8])
 
@@ -472,6 +472,7 @@ class Train:
 
         else:
             df.to_csv(score_path)
+
 
 def main():
     """
