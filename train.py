@@ -186,7 +186,7 @@ class Train:
                                     direction="maximize", pruner=optuna.pruners.HyperbandPruner())
         # parallelize optuna with joblib
 
-        study.optimize(self.objective, n_trials=args.n_trials, n_jobs=2)
+        study.optimize(self.objective, n_trials=args.n_trials, n_jobs=1)
 
         # Get trials that were pruned and completed
         pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
