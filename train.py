@@ -8,7 +8,7 @@ import os
 import pandas as pd
 import random
 from optuna.trial import TrialState
-from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+from sklearn.metrics import balanced_accuracy_score, f1_score, precision_score, recall_score
 from sklearn.utils import class_weight
 from torch import nn
 from torch.optim import Adam
@@ -349,7 +349,7 @@ class Train:
                 valid_y = torch.flatten(valid_y, start_dim=0).cpu().detach().numpy()
                 outputs = outputs.reshape(-1).cpu().detach().numpy()
 
-                sum_accuracy += accuracy_score(outputs, valid_y)
+                sum_accuracy += balanced_accuracy_score(outputs, valid_y)
                 class_weights = {0: self.class_weights[0], 1: self.class_weights[1]}
 
                 if self.use_weight:
@@ -417,7 +417,7 @@ class Train:
         class_weights = {0: self.class_weights[0], 1: self.class_weights[1]}
 
         # Calculate evaluation metrics
-        accuracy = accuracy_score(test_y_tot, predictions)
+        accuracy = balanced_accuracy_score(test_y_tot, predictions)
         precision = precision_score(test_y_tot, predictions, average='weighted', labels=np.unique(test_y_tot),
                                         sample_weight=[class_weights[y] for y in test_y_tot])
         recall = recall_score(test_y_tot, predictions, average='weighted', labels=np.unique(test_y_tot),
