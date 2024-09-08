@@ -9,8 +9,7 @@ In some cases, these faults can result in machine breakdowns, causing interrupti
 
 The ultimate goal is to predict potential interruptions preceded by a series of anomalies, allowing for preventive measures that save on financial and maintenance costs.
 
-Unfortunately, due to political reasons, the anomaly/interruption dataset from Bosch was not accessible at the time. As an alternative, we select three publicly available time series dataset 
-with labeled events.
+Below is the list of public datasets that our model is trained and evaluted on to show its generalization to various datasets.
 
 Link to download each dataset is given below:
 
